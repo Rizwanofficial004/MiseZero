@@ -4,21 +4,18 @@ import { Sparkline } from "@/components/charts/sparkline";
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  cafeProfile,
-  dashboardSummary,
-  kpiSparklines,
-  todayActions,
-} from "@/lib/data/demo";
+import { cafeProfile, dashboardSummary, getDailyActions, kpiSparklines } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 import { Boxes, Clock3, ShieldCheck, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
+  const actions = getDailyActions();
+
   return (
     <div>
       <DashboardHeader
-        title="Today's Actions"
-        description={`${cafeProfile.staffDailyInputTarget} daily workflow — exception-based confirmations only`}
+        title="Daily Action Hub"
+        description="What needs attention, by when, and what to do — a 60–90 second review"
       />
       <div className="p-6 pt-3">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -50,6 +47,24 @@ export default function DashboardPage() {
           />
         </div>
 
+        <Card className="mt-5 border-mint-200 bg-mint-50/80">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">
+                {actions.length} items need a decision before the afternoon cut-off
+              </p>
+              <ol className="mt-2 space-y-1 text-sm text-ink-muted">
+                {actions.map((action, index) => (
+                  <li key={action.id}>
+                    {index + 1}. {action.productName} — {action.recommendedAction}
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <Badge variant="success">Safety violations: 0</Badge>
+          </CardContent>
+        </Card>
+
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <WeeklyProtectedChart />
@@ -57,23 +72,11 @@ export default function DashboardPage() {
           <ConfidenceDonut />
         </div>
 
-        <Card className="mt-5 border-mint-200 bg-mint-50/80">
-          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
-            <div>
-              <p className="text-sm font-semibold text-ink">Decision support mode active</p>
-              <p className="text-sm text-ink-muted">
-                Recommendations require staff approval. Safety rules cannot be overridden by models.
-              </p>
-            </div>
-            <Badge variant="success">Safety violations: 0</Badge>
-          </CardContent>
-        </Card>
-
         <div className="mt-8 space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">
             Priority action list
           </h2>
-          {todayActions.map((action, i) => (
+          {actions.map((action, i) => (
             <ActionCard key={action.id} action={action} index={i} />
           ))}
         </div>

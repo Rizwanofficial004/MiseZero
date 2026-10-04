@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BellRing, Search } from "lucide-react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
-import { alerts, cafeProfile } from "@/lib/data/demo";
+import { alerts, cafeProfile } from "@/lib/data";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);

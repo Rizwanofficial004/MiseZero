@@ -8,6 +8,8 @@ import {
   Cable,
   ChartNoAxesCombined,
   Gauge,
+  ClipboardList,
+  Hand,
   House,
   PanelLeftClose,
   PanelLeftOpen,
@@ -18,15 +20,17 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { Logo } from "@/components/layout/landing-nav";
-import { cafeProfile } from "@/lib/data/demo";
+import { cafeProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Today's Actions", icon: House },
+  { href: "/dashboard", label: "Daily Action Hub", icon: House },
   { href: "/dashboard/alerts", label: "Alerts", icon: BellRing },
   { href: "/dashboard/intake", label: "Smart Intake", icon: ScanLine },
+  { href: "/dashboard/staff-inputs", label: "Manual & Staff", icon: Hand },
   { href: "/dashboard/inventory", label: "Stock Estimates", icon: Boxes },
-  { href: "/dashboard/recommendations", label: "Recommendations", icon: WandSparkles },
+  { href: "/dashboard/recommendations", label: "Rescue Optimiser", icon: WandSparkles },
+  { href: "/dashboard/waste", label: "Waste & Evidence", icon: ClipboardList },
   { href: "/dashboard/data-sources", label: "Data Sources", icon: Cable },
   { href: "/dashboard/integrations", label: "POS Mapping", icon: ChartNoAxesCombined },
   { href: "/dashboard/outcomes", label: "Outcomes", icon: Gauge },

@@ -3,7 +3,7 @@
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { benchmarkComparison, calibrationMetrics } from "@/lib/data/demo";
+import { benchmarkComparison, calibrationMetrics } from "@/lib/data";
 import {
   BarChart,
   Bar,

@@ -1,7 +1,7 @@
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { alerts } from "@/lib/data/demo";
+import { alerts } from "@/lib/data";
 import { BellRing, Boxes, Cable, ScanSearch, ShieldCheck } from "lucide-react";
 
 const typeIcons = {
@@ -19,7 +19,7 @@ export default function AlertsPage() {
     <div>
       <DashboardHeader
         title="Alerts"
-        description={`${unread} unread — stock risks, safety windows, intake reviews, and integration status`}
+        description={`${unread} unread — time-sensitive items that cannot wait for the next daily review`}
       />
       <div className="p-6 space-y-3">
         {alerts.map((alert) => {

@@ -1,7 +1,7 @@
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { posMappings } from "@/lib/data/demo";
+import { posMappings } from "@/lib/data";
 import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 export default function IntegrationsPage() {

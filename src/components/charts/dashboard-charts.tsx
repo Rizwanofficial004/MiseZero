@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
-import { confidenceMix, weeklyTrend } from "@/lib/data/demo";
+import { confidenceMix, weeklyTrend } from "@/lib/data";
 
 export function WeeklyProtectedChart() {
   return (

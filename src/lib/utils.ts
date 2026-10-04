@@ -18,6 +18,10 @@ export function formatRange(min: number, max: number, unit: string) {
   return `${min}–${max} ${unit}`;
 }
 
+export function formatMoneyRange(min: number, max: number) {
+  return `${formatCurrency(min)}–${formatCurrency(max)}`;
+}
+
 export function confidenceColor(confidence: number) {
   if (confidence >= 85) return "text-mint-700 bg-mint-100 border-mint-200";
   if (confidence >= 70) return "text-amber-700 bg-amber-50 border-amber-200";

@@ -6,6 +6,7 @@ import {
   HowItWorksSection,
   LogoMarquee,
   PosSection,
+  PositioningSection,
   PricingSection,
 } from "@/components/landing/sections";
 import { LandingFooter, LandingNav } from "@/components/layout/landing-nav";
@@ -19,6 +20,7 @@ export default function HomePage() {
         <LogoMarquee />
         <FeaturesSection />
         <HowItWorksSection />
+        <PositioningSection />
         <BenchmarkSection />
         <PosSection />
         <PricingSection />

@@ -13,11 +13,11 @@ export function HeroPreview() {
         transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">Today’s action</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">Daily action</p>
           <Badge variant="priority" priority="high">High</Badge>
         </div>
         <h3 className="mt-3 text-xl font-semibold text-ink">Fresh cream</h3>
-        <p className="mt-1 text-sm text-mint-700">Confirm remaining quantity before 14:00</p>
+        <p className="mt-1 text-sm text-mint-700">Confirm stock and allocate eligible cream by 14:00</p>
 
         <div className="mt-5 flex items-center gap-5">
           <div className="relative flex h-24 w-24 items-center justify-center">
@@ -34,19 +34,19 @@ export function HeroPreview() {
                 strokeLinecap="round"
                 strokeDasharray={239}
                 initial={{ strokeDashoffset: 239 }}
-                animate={{ strokeDashoffset: 239 * (1 - 0.64) }}
+                animate={{ strokeDashoffset: 239 * (1 - 0.78) }}
                 transition={{ duration: 1.4, delay: 0.5, ease: "easeOut" }}
               />
             </svg>
             <div className="absolute text-center">
-              <p className="text-lg font-bold text-ink">64%</p>
+              <p className="text-lg font-bold text-ink">78%</p>
               <p className="text-[10px] text-ink-muted">confidence</p>
             </div>
           </div>
           <div>
             <p className="text-xs text-ink-muted">Estimated remaining</p>
-            <p className="font-serif text-3xl text-ink">3.8–5.6 L</p>
-            <p className="mt-1 text-xs text-ink-muted">Most likely 4.6 L · £18.40 at risk</p>
+            <p className="font-serif text-3xl text-ink">4.2–5.8 L</p>
+            <p className="mt-1 text-xs text-ink-muted">Most likely 4.9 L · action by 14:00</p>
           </div>
         </div>
       </motion.div>
@@ -76,7 +76,7 @@ export function HeroPreview() {
         transition={{ delay: 0.7 }}
       >
         <p className="text-[11px] font-semibold text-ink-muted">Vs deterministic</p>
-        <p className="mt-1 text-sm text-ink">Baseline says 7.5 L. MiseZero says a range — because kitchens are not spreadsheets.</p>
+        <p className="mt-1 text-sm text-ink">A ledger would say 5 L exactly. MiseZero keeps the range, because the kitchen record is incomplete.</p>
       </motion.div>
     </div>
   );

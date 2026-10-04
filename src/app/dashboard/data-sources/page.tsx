@@ -1,7 +1,7 @@
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { dataSources } from "@/lib/data/demo";
+import { getDataSources } from "@/lib/data";
 import { Cable, CircleAlert, CircleCheck, CircleX, Clock3 } from "lucide-react";
 
 const statusConfig = {
@@ -16,7 +16,7 @@ export default function DataSourcesPage() {
     <div>
       <DashboardHeader
         title="Data Sources"
-        description="Track the data sources that power your stock estimates"
+        description="Invoices, POS, recipes, preparation, waste and the occasional staff check"
       />
       <div className="p-6">
         <Card className="mb-6 border-mint-200 bg-mint-50/50">
@@ -27,7 +27,7 @@ export default function DataSourcesPage() {
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {dataSources.map((source) => {
+          {getDataSources().map((source) => {
             const config = statusConfig[source.status];
             const Icon = config.icon;
             const mappedPct = Math.round((source.fieldsMapped / source.fieldsTotal) * 100);

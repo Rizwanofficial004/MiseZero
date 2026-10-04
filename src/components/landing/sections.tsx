@@ -10,13 +10,13 @@ import {
   benchmarkComparison,
   cafeProfile,
   dashboardSummary,
+  getPositioning,
   knowledgeGraphExample,
   plans,
-} from "@/lib/data/demo";
+} from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 import {
   ArrowRight,
-  Cable,
   CheckCircle2,
   Gauge,
   Leaf,
@@ -42,7 +42,7 @@ export function HeroSection() {
             transition={{ duration: 0.5, ease }}
           >
             <Leaf className="h-3.5 w-3.5" strokeWidth={1.75} />
-            For independent cafés & restaurants
+            Bakeries, cafés, delis and restaurants
           </motion.p>
           <motion.h1
             className="font-serif mt-6 max-w-xl text-4xl leading-[1.08] text-ink sm:text-5xl lg:text-[3.75rem]"
@@ -58,8 +58,8 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.16, ease }}
           >
-            MiseZero estimates perishable inventory with confidence ranges, calculates safety action windows,
-            and recommends commercially sensible interventions — in a 60–90 second daily workflow.
+            MiseZero estimates what stock is probably still there, sets the last safe time to act,
+            and recommends the response that protects the most value — in a 60–90 second daily review.
           </motion.p>
           <motion.div
             className="mt-8 flex flex-wrap gap-3"
@@ -122,32 +122,32 @@ export function FeaturesSection() {
     {
       icon: ScanLine,
       title: "Smart Intake",
-      description: "Invoices, delivery notes, scale weights, and POS exports — confidence-scored extraction with quick corrections.",
+      description: "Invoices, deliveries, POS, preparation and voice notes. Low-confidence fields are confirmed, not silently trusted.",
     },
     {
       icon: Gauge,
-      title: "Perishable-State Estimator",
-      description: "Quantity ranges and confidence scores instead of false precision. Partial observability built in.",
+      title: "Shadow Stock",
+      description: "A likely quantity range and a confidence level when the kitchen record is incomplete.",
     },
     {
       icon: ShieldCheck,
-      title: "Safety Action Windows",
-      description: "Deterministic food-safety rules calculate the last feasible intervention time — not just expiry dates.",
+      title: "Safe Action Window",
+      description: "Hard food-safety rules and the site’s real cut-off. The product deadline and the time to act are not the same.",
     },
     {
       icon: WandSparkles,
       title: "Rescue Optimiser",
-      description: "Compare freeze, markdown, production reduction, and order changes — uncertainty-aware recommendations.",
+      description: "Compares production cuts, smaller orders, freezing, markdowns and a stock check, then explains the choice.",
     },
     {
-      icon: Cable,
-      title: "POS-aware mapping",
-      description: "Square, Toast, Lightspeed, Epos Now — field mapping adapts to each venue. Secure exports keep you moving when a direct connection isn't available.",
+      icon: CheckCircle2,
+      title: "Daily Action Hub",
+      description: "Three questions: what needs attention, by when, and what to do. Accept, modify, or confirm stock.",
     },
     {
       icon: Sparkles,
-      title: "Explainable decisions",
-      description: "Every recommendation ties to binding constraints, forecasts, and inventory confidence — not generic templates.",
+      title: "Waste evidence pack",
+      description: "When waste still happens, record the quantity, reason, destination and value — and learn from it.",
     },
   ];
 
@@ -156,10 +156,10 @@ export function FeaturesSection() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>
           <p className="text-sm font-semibold text-mint-700">The product</p>
-          <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">Built around measurable uncertainty</h2>
+          <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">Estimate, constrain, then optimise</h2>
           <p className="mt-4 max-w-2xl text-ink-muted">
-            Not another inventory spreadsheet. MiseZero proves that imperfect stock information
-            can drive safer, commercially useful decisions.
+            Built for owner-managed food businesses that know what they bought and what they sold,
+            but not exactly what is left in the kitchen.
           </p>
         </Reveal>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,24 +184,22 @@ export function FeaturesSection() {
 
 export function HowItWorksSection() {
   const steps = [
-    "Invoice recognised — 12 L cream delivered Monday 08:00",
-    "POS & recipes indicate partial consumption (~4.5 L)",
-    "System estimates 3.8–5.6 L remaining at 64% confidence",
-    "Safety engine: intervention required before 14:00",
-    "Optimiser evaluates recipe use, freeze, markdown, order reduction",
-    "Low confidence → request quick stock confirmation",
-    "Staff confirms 4.2 L → recommendation recalculates",
-    "Outcome recorded → calibration updated",
+    "Capture the signals already created in service — invoice, POS, a voice note, a waste record",
+    "Estimate 4.2–5.8 L of fresh cream still available, most probable 4.9 L, at 78% confidence",
+    "Triage the risk: expected use is 2.5–3.0 L, so 1.2–3.3 L is probable surplus",
+    "Constrain the window: product life runs until tomorrow, but production must start by 14:00",
+    "Optimise: allocate 1.2 L to today’s cake and reduce tomorrow’s order",
+    "Record what staff did, and what was actually wasted, so the next estimate is sharper",
   ];
 
   return (
     <section id="how-it-works" className="bg-white py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>
-          <p className="text-sm font-semibold text-mint-700">The proof</p>
-          <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">See the decision flow</h2>
+          <p className="text-sm font-semibold text-mint-700">How it works</p>
+          <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">From a delivery to a decision</h2>
           <p className="mt-4 max-w-2xl text-ink-muted">
-            The demo café ({cafeProfile.name}) follows the core technical proof from our innovation case.
+            {cafeProfile.name} in Manchester is the demo site. The cream example is the same path a manager sees in the Daily Action Hub.
           </p>
         </Reveal>
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -250,6 +248,37 @@ export function HowItWorksSection() {
   );
 }
 
+export function PositioningSection() {
+  const points = getPositioning();
+  return (
+    <section className="py-16">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <Reveal>
+          <p className="text-sm font-semibold text-mint-700">Where it sits</p>
+          <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">Prevention while there is still time to act</h2>
+          <p className="mt-4 max-w-2xl text-ink-muted">
+            Inventory systems want a complete ledger. Bin cameras measure waste after it happens.
+            MiseZero works in the gap between the two.
+          </p>
+        </Reveal>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {points.map((point, index) => (
+            <Reveal key={point.title} delay={index * 0.06}>
+              <Card className="h-full">
+                <CardContent className="p-5">
+                  <CheckCircle2 className="h-5 w-5 text-mint-600" strokeWidth={1.75} />
+                  <h3 className="mt-3 font-semibold text-ink">{point.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">{point.detail}</p>
+                </CardContent>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function BenchmarkSection() {
   return (
     <section className="py-16">
@@ -291,7 +320,7 @@ export function PricingSection() {
         <Reveal className="text-center">
           <p className="text-sm font-semibold text-mint-700">Pricing</p>
           <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">Plans for every stage</h2>
-          <p className="mt-4 text-ink-muted">From single-site pilots to multi-site enterprise with custom POS mapping</p>
+          <p className="mt-4 text-ink-muted">Single-site bakeries and cafés through to small multi-site groups</p>
         </Reveal>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {plans.map((plan, i) => (

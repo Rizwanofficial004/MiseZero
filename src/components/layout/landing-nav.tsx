@@ -70,7 +70,7 @@ export function LandingFooter() {
             <Logo />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-ink-muted">
               Decision support for perishable stock when exact inventory is unknown.
-              Built for independent cafés, bakeries, and restaurants.
+              Built for independent bakeries, cafés, delis and restaurants.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-10 text-sm sm:grid-cols-3">

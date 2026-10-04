@@ -16,7 +16,7 @@ const instrument = Instrument_Serif({
 export const metadata: Metadata = {
   title: "MiseZero — Perishable stock decisions when inventory is uncertain",
   description:
-    "Decision support for restaurants and cafés. Confidence-weighted stock estimates, safety action windows, and waste-saving recommendations.",
+    "Decision support for bakeries, cafés, delis and restaurants. Stock ranges, safe action windows, and a short daily list of what to do.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

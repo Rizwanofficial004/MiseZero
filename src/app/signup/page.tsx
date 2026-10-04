@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/layout/landing-nav";
-import { plans } from "@/lib/data/demo";
+import { plans } from "@/lib/data";
 
 export default function SignupPage() {
   return (
