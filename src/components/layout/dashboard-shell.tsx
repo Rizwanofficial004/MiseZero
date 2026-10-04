@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BellRing, Search } from "lucide-react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
-import { alerts, cafeProfile } from "@/lib/data";
+import { ToastProvider } from "@/components/ui/toast";
+import { useDemo } from "@/services/useDemo";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -22,13 +23,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const unread = alerts.filter((a) => !a.read).length;
+  const demo = useDemo();
+  const unread = demo.alerts.length;
+  const person = demo.session?.name ?? "Sarah Chen";
 
   return (
+    <ToastProvider>
     <div className="flex min-h-screen bg-[#f7faf8]">
       <DashboardSidebar collapsed={collapsed} onToggle={toggle} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-[#e2ebe5] bg-white/90 px-5 backdrop-blur-xl">
+        <header className="no-print sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-[#e2ebe5] bg-white/90 px-5 backdrop-blur-xl">
           <div className="relative hidden max-w-md flex-1 md:block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" strokeWidth={1.75} />
             <input
@@ -53,8 +57,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 BC
               </span>
               <div className="hidden leading-tight sm:block">
-                <p className="text-[11px] font-semibold text-ink">Sarah Chen</p>
-                <p className="text-[11px] text-ink-muted">{cafeProfile.name}</p>
+                <p className="text-[11px] font-semibold text-ink">{person}</p>
+                <p className="text-[11px] text-ink-muted">{demo.venue.name}</p>
               </div>
             </div>
           </div>
@@ -62,5 +66,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-auto scrollbar-thin">{children}</main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

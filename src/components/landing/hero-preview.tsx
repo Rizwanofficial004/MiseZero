@@ -2,8 +2,16 @@
 
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { sampleCream } from "@/engine/sample";
+import { formatVenue } from "@/lib/dates";
 
 export function HeroPreview() {
+  const cream = sampleCream();
+  const confidence = Math.round(cream.math.confidence);
+  const low = Math.round(cream.math.low * 10) / 10;
+  const high = Math.round(cream.math.high * 10) / 10;
+  const expected = Math.round(cream.math.expected * 10) / 10;
+  const actBy = cream.actBy ? formatVenue(cream.actBy, "Europe/London") : "the buffer";
   return (
     <div className="relative mx-auto w-full max-w-md">
       <motion.div
@@ -34,19 +42,19 @@ export function HeroPreview() {
                 strokeLinecap="round"
                 strokeDasharray={239}
                 initial={{ strokeDashoffset: 239 }}
-                animate={{ strokeDashoffset: 239 * (1 - 0.78) }}
+                animate={{ strokeDashoffset: 239 * (1 - confidence / 100) }}
                 transition={{ duration: 1.4, delay: 0.5, ease: "easeOut" }}
               />
             </svg>
             <div className="absolute text-center">
-              <p className="text-lg font-bold text-ink">78%</p>
+              <p className="text-lg font-bold text-ink">{confidence}%</p>
               <p className="text-[10px] text-ink-muted">confidence</p>
             </div>
           </div>
           <div>
             <p className="text-xs text-ink-muted">Estimated remaining</p>
-            <p className="font-serif text-3xl text-ink">4.2–5.8 L</p>
-            <p className="mt-1 text-xs text-ink-muted">Most likely 4.9 L · action by 14:00</p>
+            <p className="font-serif text-3xl text-ink">{low}–{high} L</p>
+            <p className="mt-1 text-xs text-ink-muted">Most likely {expected} L · action by {actBy}</p>
           </div>
         </div>
       </motion.div>
@@ -58,7 +66,7 @@ export function HeroPreview() {
         transition={{ delay: 0.55 }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Safety window</p>
-        <p className="mt-1 text-sm font-semibold text-ink">Closes 14:00</p>
+        <p className="mt-1 text-sm font-semibold text-ink">Closes {actBy}</p>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-mint-100">
           <motion.div
             className="h-full rounded-full bg-mint-500"

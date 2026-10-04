@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { sampleCream } from "@/engine/sample";
+import { formatVenue } from "@/lib/dates";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -182,14 +184,19 @@ export function FeaturesSection() {
   );
 }
 
+function round1(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
 export function HowItWorksSection() {
+  const cream = sampleCream();
   const steps = [
     "Capture the signals already created in service — invoice, POS, a voice note, a waste record",
-    "Estimate 4.2–5.8 L of fresh cream still available, most probable 4.9 L, at 78% confidence",
-    "Triage the risk: expected use is 2.5–3.0 L, so 1.2–3.3 L is probable surplus",
-    "Constrain the window: product life runs until tomorrow, but production must start by 14:00",
-    "Optimise: allocate 1.2 L to today’s cake and reduce tomorrow’s order",
-    "Record what staff did, and what was actually wasted, so the next estimate is sharper",
+    `Estimate ${round1(cream.math.low)}–${round1(cream.math.high)} L of fresh cream still available, most probable ${round1(cream.math.expected)} L, at ${Math.round(cream.math.confidence)}% confidence`,
+    `Triage the risk: expected use is ${round1(cream.expectedUse)} L, so ${round1(cream.surplus)} L is probable surplus`,
+    `Constrain the window: act by ${cream.actBy ? formatVenue(cream.actBy, "Europe/London") : "the storage buffer"}`,
+    "Optimise: pick the feasible rescue option with the best net value",
+    "Record what staff did, and what was actually wasted, so the evidence pack stays current",
   ];
 
   return (

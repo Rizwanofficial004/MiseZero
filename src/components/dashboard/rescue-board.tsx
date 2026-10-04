@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Recommendation } from "@/lib/data";
-import { formatMoneyRange } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { acceptAction, dismissAction, modifyAction } from "@/services/actionService";
+import { useDemo } from "@/services/useDemo";
+import { formatCurrency } from "@/lib/utils";
 import { Shield } from "lucide-react";
 
 const actionLabels = {
@@ -18,20 +20,43 @@ const actionLabels = {
   combined: "Combined response",
 };
 
-export function RescueBoard({ recommendations }: { recommendations: Recommendation[] }) {
+export function RescueBoard() {
+  const demo = useDemo();
+  if (demo.rescues.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-mint-200 bg-white px-4 py-6 text-sm text-ink-muted">
+        No surplus is waiting. Rescue options appear when expected stock exceeds use before the deadline.
+      </p>
+    );
+  }
   return (
     <div className="space-y-4">
-      {recommendations.map((rec) => (
+      {demo.rescues.map((rec) => (
         <RescueCard key={rec.id} rec={rec} />
       ))}
     </div>
   );
 }
 
-function RescueCard({ rec }: { rec: Recommendation }) {
-  const [status, setStatus] = useState(rec.status);
+function RescueCard({ rec }: { rec: ReturnType<typeof useDemo>["rescues"][number] }) {
+  const toast = useToast();
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
+  const [pending, setPending] = useState(false);
+  const selected = rec.options.find((option) => option.selected) ?? rec.options.find((option) => option.feasible);
+
+  const run = async (work: () => Promise<void>, success: string) => {
+    setPending(true);
+    try {
+      await work();
+      toast.push(success);
+      setEditing(false);
+    } catch (error) {
+      toast.push(error instanceof Error ? error.message : "Could not save that", "error");
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <Card>
@@ -53,11 +78,9 @@ function RescueCard({ rec }: { rec: Recommendation }) {
           </div>
           <div className="text-right">
             <p className="text-xs text-ink-muted">Expected commercial impact</p>
-            <p className="text-lg font-bold text-ink">
-              {formatMoneyRange(rec.expectedValue.min, rec.expectedValue.max)}
-            </p>
+            <p className="text-lg font-bold text-ink">{formatCurrency(rec.expectedValue)}</p>
             <Badge variant="confidence" confidence={rec.confidence} className="mt-1">
-              {rec.confidence}% confidence
+              {Math.round(rec.confidence)}% confidence
             </Badge>
           </div>
         </div>
@@ -89,41 +112,48 @@ function RescueCard({ rec }: { rec: Recommendation }) {
           </table>
         </div>
 
-        {status === "pending" ? (
+        {rec.status === "pending" && selected ? (
           <div className="mt-4 space-y-3">
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setStatus("accepted")}>Accept</Button>
+              <Button
+                size="sm"
+                disabled={pending || !selected.feasible}
+                onClick={() => run(() => acceptAction({ productId: rec.productId, optionId: selected.id, title: selected.label, detail: rec.reason }), "Action accepted")}
+              >
+                Accept
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setEditing((open) => !open)}>Modify</Button>
-              <Button size="sm" variant="ghost" onClick={() => setStatus("rejected")}>Reject</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={pending}
+                onClick={() => run(() => dismissAction({ productId: rec.productId, optionId: selected.id, title: selected.label }), "Action dismissed")}
+              >
+                Reject
+              </Button>
             </div>
             {editing && (
               <form
                 className="rounded-lg border border-mint-200 p-3"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  setStatus("modified");
-                  setEditing(false);
+                  void run(
+                    () => modifyAction({ productId: rec.productId, optionId: selected.id, title: selected.label, detail: rec.reason, modification: note }),
+                    "Modification saved",
+                  );
                 }}
               >
-                <label className="text-xs font-medium text-ink" htmlFor={`note-${rec.id}`}>
-                  What should change?
-                </label>
-                <input
-                  id={`note-${rec.id}`}
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="For example, cut the order by 2 L instead of 1 L"
-                  className="input-field mt-1"
-                />
-                <Button size="sm" className="mt-2" type="submit">Save modification</Button>
+                <label className="text-xs font-medium text-ink" htmlFor={`note-${rec.id}`}>What should change?</label>
+                <input id={`note-${rec.id}`} value={note} onChange={(event) => setNote(event.target.value)} className="input-field mt-1" />
+                <Button size="sm" className="mt-2" type="submit" disabled={pending}>Save modification</Button>
               </form>
             )}
           </div>
         ) : (
           <p className="mt-4 rounded-lg bg-mint-50 px-3 py-2 text-sm text-ink">
-            {status === "accepted" && "Accepted. The outcome will be compared with this expected impact."}
-            {status === "modified" && `Modified${note ? `: ${note}` : ""}. The change is kept for learning.`}
-            {status === "rejected" && "Rejected. The reason can be used the next time this pattern appears."}
+            {rec.status === "accepted" && "Accepted. Mark it done on the Daily Action Hub to store the outcome."}
+            {rec.status === "modified" && "Modified. The change is stored with the action."}
+            {rec.status === "rejected" && "Dismissed. It stays out of the action list."}
           </p>
         )}
       </CardContent>

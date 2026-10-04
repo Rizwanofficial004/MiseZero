@@ -1,6 +1,5 @@
 import { RescueBoard } from "@/components/dashboard/rescue-board";
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
-import { getRecommendations } from "@/lib/data";
 
 export default function RecommendationsPage() {
   return (
@@ -10,7 +9,7 @@ export default function RecommendationsPage() {
         description="Feasible responses compared for commercial value, inside the safety window"
       />
       <div className="p-6">
-        <RescueBoard recommendations={getRecommendations()} />
+        <RescueBoard />
       </div>
     </div>
   );

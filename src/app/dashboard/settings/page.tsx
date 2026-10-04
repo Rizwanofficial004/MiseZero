@@ -1,6 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getVenueSettings } from "@/lib/data";
+import { useToast } from "@/components/ui/toast";
+import { loadSample, resetDemo, signOut } from "@/services/activityService";
+import { useDemo } from "@/services/useDemo";
 
 const hardRules = [
   "Use-by limits cannot be passed",
@@ -18,7 +24,21 @@ const qualityRules = [
 ];
 
 export default function SettingsPage() {
-  const { cafeProfile, products, coldStart, knowledgeGraphExample } = getVenueSettings();
+  const demo = useDemo();
+  const toast = useToast();
+  const [pending, setPending] = useState(false);
+
+  const run = async (work: () => Promise<void>, success: string) => {
+    setPending(true);
+    try {
+      await work();
+      toast.push(success);
+    } catch (error) {
+      toast.push(error instanceof Error ? error.message : "Could not update the demo", "error");
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <div>
@@ -27,16 +47,35 @@ export default function SettingsPage() {
         description="Venue profile, cold-start priors, safety rules and the food-service ontology"
       />
       <div className="grid gap-6 p-6 lg:grid-cols-2">
+        <Card className="lg:col-span-2">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <div>
+              <h3 className="font-medium text-ink">Demo data</h3>
+              <p className="mt-1 text-sm text-ink-muted">
+                Reset replaces everything in this browser with the Bloom & Crumb sample, including the cream worked example.
+                {demo.session ? ` Signed in as ${demo.session.email}.` : " Not signed in."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={pending} onClick={() => void run(resetDemo, "Demo data reset")}>Reset demo data</Button>
+              <Button variant="outline" disabled={pending} onClick={() => void run(loadSample, "Sample data loaded")}>Load sample data</Button>
+              {demo.session && (
+                <Button variant="ghost" disabled={pending} onClick={() => void run(signOut, "Signed out")}>Sign out</Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="p-5">
             <h3 className="font-medium text-ink">Venue profile</h3>
             <dl className="mt-4 space-y-3 text-sm">
-              <Row label="Name" value={cafeProfile.name} />
-              <Row label="Type" value={cafeProfile.type} />
-              <Row label="Location" value={cafeProfile.location} />
-              <Row label="Archetype" value={cafeProfile.archetype} />
-              <Row label="Hours" value={`${cafeProfile.operatingHours.open} – ${cafeProfile.operatingHours.close}`} />
-              <Row label="Production ends" value={cafeProfile.operatingHours.productionEnds} />
+              <Row label="Name" value={demo.venue.name} />
+              <Row label="Type" value={demo.venue.type} />
+              <Row label="Location" value={demo.venue.city} />
+              <Row label="Timezone" value={demo.venue.timezone} />
+              <Row label="Hours" value={`${demo.venue.hoursOpen} – ${demo.venue.hoursClose}`} />
+              <Row label="Production ends" value={demo.venue.productionEnds} />
             </dl>
           </CardContent>
         </Card>
@@ -44,28 +83,19 @@ export default function SettingsPage() {
         <Card>
           <CardContent className="p-5">
             <h3 className="font-medium text-ink">Cold start</h3>
-            <p className="mt-2 text-sm text-ink-muted">{coldStart.note}</p>
-            <p className="mt-4 text-sm font-medium text-ink">
-              {coldStart.stage}: {coldStart.siteWeight}% site-specific, {coldStart.archetypeWeight}% café archetype
+            <p className="mt-2 text-sm text-ink-muted">
+              Until this site has its own history, estimates lean on the café archetype. Counts, deliveries, and sales replace that prior.
             </p>
-            <ul className="mt-3 space-y-1 text-sm text-ink-muted">
-              {coldStart.priors.map((prior) => (
-                <li key={prior}>• {prior}</li>
-              ))}
-            </ul>
+            <p className="mt-4 text-sm font-medium text-ink">{demo.products.length} products · {demo.recipes.length} recipes · {demo.sales.length} sales</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-5">
             <h3 className="font-medium text-ink">Hard safety rules</h3>
-            <p className="mt-2 text-sm text-ink-muted">
-              These boundaries cannot be overridden by a forecast or a higher-margin option.
-            </p>
+            <p className="mt-2 text-sm text-ink-muted">These boundaries cannot be overridden by a forecast or a higher-margin option.</p>
             <ul className="mt-4 space-y-2 text-sm text-ink-muted">
-              {hardRules.map((rule) => (
-                <li key={rule}>• {rule}</li>
-              ))}
+              {hardRules.map((rule) => <li key={rule}>• {rule}</li>)}
             </ul>
           </CardContent>
         </Card>
@@ -73,37 +103,19 @@ export default function SettingsPage() {
         <Card>
           <CardContent className="p-5">
             <h3 className="font-medium text-ink">Quality constraints</h3>
-            <p className="mt-2 text-sm text-ink-muted">
-              These can narrow which interventions stay attractive. They are not the same as a safety prohibition.
-            </p>
+            <p className="mt-2 text-sm text-ink-muted">These can narrow which interventions stay attractive. They are not the same as a safety prohibition.</p>
             <ul className="mt-4 space-y-2 text-sm text-ink-muted">
-              {qualityRules.map((rule) => (
-                <li key={rule}>• {rule}</li>
-              ))}
+              {qualityRules.map((rule) => <li key={rule}>• {rule}</li>)}
             </ul>
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
-            <h3 className="font-medium text-ink">Food-service ontology · {knowledgeGraphExample.atRisk}</h3>
-            <p className="mt-2 text-sm text-ink-muted">{knowledgeGraphExample.insight}</p>
-            <ol className="mt-4 space-y-2">
-              {knowledgeGraphExample.chain.map((item, index) => (
-                <li key={item.node} className="flex items-center gap-3 text-sm">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mint-100 text-xs font-semibold text-mint-700">
-                    {index + 1}
-                  </span>
-                  <span className="font-medium text-ink">{item.node}</span>
-                  <span className="text-ink-muted">{item.relation}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {products.map((product) => (
-                <span key={product.id} className="rounded-full bg-mint-100 px-3 py-1 text-xs text-ink">
-                  {product.name}
-                </span>
+            <h3 className="font-medium text-ink">Catalogue</h3>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {demo.products.map((product) => (
+                <span key={product.id} className="rounded-full bg-mint-100 px-3 py-1 text-xs text-ink">{product.name}</span>
               ))}
             </div>
           </CardContent>

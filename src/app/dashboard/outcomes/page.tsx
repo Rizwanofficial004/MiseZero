@@ -1,10 +1,16 @@
+"use client";
+
 import { WeeklyProtectedChart } from "@/components/charts/dashboard-charts";
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Badge } from "@/components/ui/badge";
-import { getOutcomes } from "@/lib/data";
-import { formatCurrency, formatMoneyRange } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import { formatVenue } from "@/lib/dates";
+import { useDemo } from "@/services/useDemo";
 
 export default function OutcomesPage() {
+  const demo = useDemo();
+  const done = demo.actions.filter((action) => action.status === "done" && action.outcome);
+
   return (
     <div>
       <DashboardHeader
@@ -13,54 +19,47 @@ export default function OutcomesPage() {
       />
       <div className="p-6">
         <div className="mb-5">
-          <WeeklyProtectedChart />
+          <WeeklyProtectedChart points={demo.week} />
         </div>
-        <div className="overflow-hidden rounded-2xl border border-mint-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-mint-50 text-left text-xs uppercase tracking-wide text-ink-muted">
-              <tr>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Recommendation</th>
-                <th className="px-4 py-3">Staff response</th>
-                <th className="px-4 py-3">Actual outcome</th>
-                <th className="px-4 py-3">Expected impact</th>
-                <th className="px-4 py-3">Observed outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {getOutcomes().map((o) => (
-                <tr key={o.id} className="border-t border-mint-100">
-                  <td className="px-4 py-4">
-                    <p className="font-medium text-ink">{o.productName}</p>
-                    <p className="text-xs text-ink-muted">{o.recordedAt}</p>
-                  </td>
-                  <td className="px-4 py-4 text-ink-muted">
-                    <p>{o.recommendation}</p>
-                    <p className="text-xs text-ink-muted mt-1">
-                      Est: {o.inventoryEstimate} · {o.confidence}% conf
-                    </p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <Badge variant={o.staffResponse === "accepted" ? "success" : "warning"}>
-                      {o.staffResponse}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-4 text-ink-muted">
-                    {o.actualProduction !== undefined && <p>Prod: {o.actualProduction}</p>}
-                    {o.actualSales !== undefined && <p>Sales: {o.actualSales}</p>}
-                    {o.actualWaste !== undefined && <p>Waste: {o.actualWaste}</p>}
-                  </td>
-                  <td className="px-4 py-4 text-ink-muted">
-                    {formatMoneyRange(o.expectedImpact.min, o.expectedImpact.max)}
-                  </td>
-                  <td className="px-4 py-4 font-medium text-mint-700">
-                    {formatCurrency(o.commercialImpact)}
-                  </td>
+        {done.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-mint-200 bg-white px-4 py-6 text-sm text-ink-muted">
+            No completed actions yet. Accept an action on the hub, then mark it done with quantity saved, quantity wasted, and value.
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-mint-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-mint-50 text-left text-xs uppercase tracking-wide text-ink-muted">
+                <tr>
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3">Recommendation</th>
+                  <th className="px-4 py-3">Staff response</th>
+                  <th className="px-4 py-3">Actual outcome</th>
+                  <th className="px-4 py-3">Observed value</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {done.map((action) => {
+                  const product = demo.products.find((item) => item.id === action.productId);
+                  return (
+                    <tr key={action.id} className="border-t border-mint-100">
+                      <td className="px-4 py-4">
+                        <p className="font-medium text-ink">{product?.name ?? "Product"}</p>
+                        <p className="text-xs text-ink-muted">{action.outcome ? formatVenue(action.outcome.recordedAt, demo.venue.timezone) : ""}</p>
+                      </td>
+                      <td className="px-4 py-4 text-ink-muted">{action.title}</td>
+                      <td className="px-4 py-4"><Badge variant="success">{action.status}</Badge></td>
+                      <td className="px-4 py-4 text-ink-muted">
+                        Saved {action.outcome?.qtySaved} · wasted {action.outcome?.qtyWasted}
+                        {action.modification ? ` · ${action.modification}` : ""}
+                      </td>
+                      <td className="px-4 py-4 font-medium text-mint-700">{formatCurrency(action.outcome?.value ?? 0)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
