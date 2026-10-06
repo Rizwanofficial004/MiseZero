@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { sampleCream } from "@/engine/sample";
-import { formatVenue } from "@/lib/dates";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -184,21 +182,7 @@ export function FeaturesSection() {
   );
 }
 
-function round1(value: number) {
-  return Math.round(value * 10) / 10;
-}
-
 export function HowItWorksSection() {
-  const cream = sampleCream();
-  const steps = [
-    "Capture the signals already created in service — invoice, POS, a voice note, a waste record",
-    `Estimate ${round1(cream.math.low)}–${round1(cream.math.high)} L of fresh cream still available, most probable ${round1(cream.math.expected)} L, at ${Math.round(cream.math.confidence)}% confidence`,
-    `Triage the risk: expected use is ${round1(cream.expectedUse)} L, so ${round1(cream.surplus)} L is probable surplus`,
-    `Constrain the window: act by ${cream.actBy ? formatVenue(cream.actBy, "Europe/London") : "the storage buffer"}`,
-    "Optimise: pick the feasible rescue option with the best net value",
-    "Record what staff did, and what was actually wasted, so the evidence pack stays current",
-  ];
-
   return (
     <section id="how-it-works" className="bg-white py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -209,20 +193,7 @@ export function HowItWorksSection() {
             {cafeProfile.name} in Manchester is the demo site. The cream example is the same path a manager sees in the Daily Action Hub.
           </p>
         </Reveal>
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <ol className="relative space-y-3">
-            <div className="absolute left-[15px] top-3 bottom-3 w-px bg-mint-200" />
-            {steps.map((step, i) => (
-              <Reveal key={step} delay={i * 0.05}>
-                <li className="relative flex gap-4 rounded-2xl bg-mint-50/80 p-3 text-sm text-ink">
-                  <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-xs font-bold text-white">
-                    {i + 1}
-                  </span>
-                  <span className="pt-1.5">{step}</span>
-                </li>
-              </Reveal>
-            ))}
-          </ol>
+        <div className="mt-8">
           <Reveal delay={0.15}>
             <Card className="h-full">
               <CardContent className="p-7">
