@@ -1,15 +1,21 @@
+"use client";
+
 import { ActionCard } from "@/components/dashboard/action-card";
 import { ConfidenceDonut, WeeklyProtectedChart } from "@/components/charts/dashboard-charts";
 import { Sparkline } from "@/components/charts/sparkline";
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cafeProfile, dashboardSummary, getDailyActions, kpiSparklines } from "@/lib/data";
+import { useDemo } from "@/services/useDemo";
 import { formatCurrency } from "@/lib/utils";
 import { Boxes, Clock3, ShieldCheck, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
-  const actions = getDailyActions();
+  const demo = useDemo();
+  const actions = demo.hub;
+  const confidenceSeries = demo.views.map((view) => Math.round(view.math.confidence));
+  const wasteSeries = demo.week.map((point) => point.waste);
+  const spark = confidenceSeries.length > 1 ? confidenceSeries : [0, demo.avgConfidence];
 
   return (
     <div>
@@ -22,28 +28,28 @@ export default function DashboardPage() {
           <SummaryCard
             icon={<TrendingUp className="h-4 w-4" strokeWidth={1.75} />}
             label="Value protected (week)"
-            value={formatCurrency(dashboardSummary.valueProtectedThisWeek)}
-            spark={kpiSparklines.protected}
+            value={formatCurrency(demo.valueProtected)}
+            spark={wasteSeries.length > 1 ? wasteSeries : [0, demo.valueProtected]}
           />
           <SummaryCard
             icon={<Boxes className="h-4 w-4" strokeWidth={1.75} />}
             label="Actions today"
-            value={String(dashboardSummary.actionsToday)}
-            sub={`${dashboardSummary.confirmationsNeeded} confirmation needed`}
-            spark={kpiSparklines.actions}
+            value={String(actions.length)}
+            sub={`${demo.confirmationsNeeded} confirmation${demo.confirmationsNeeded === 1 ? "" : "s"} needed`}
+            spark={spark}
           />
           <SummaryCard
             icon={<ShieldCheck className="h-4 w-4" strokeWidth={1.75} />}
             label="Avg inventory confidence"
-            value={`${dashboardSummary.avgConfidence}%`}
-            spark={kpiSparklines.confidence}
+            value={`${Math.round(demo.avgConfidence)}%`}
+            spark={spark}
           />
           <SummaryCard
             icon={<Clock3 className="h-4 w-4" strokeWidth={1.75} />}
-            label="Personalisation"
-            value={`${cafeProfile.personalization.siteSpecific}% site`}
-            sub={`${cafeProfile.personalization.archetype}% café archetype`}
-            spark={kpiSparklines.personalisation}
+            label="Checks waiting"
+            value={String(demo.confirmationsNeeded)}
+            sub="Wide range, low confidence, value, or use-by inside 48h"
+            spark={spark}
           />
         </div>
 
@@ -51,33 +57,38 @@ export default function DashboardPage() {
           <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
             <div>
               <p className="text-sm font-semibold text-ink">
-                {actions.length} items need a decision before the afternoon cut-off
+                {actions.length === 0
+                  ? "Nothing is waiting. New deliveries, sales, or waste will refill this list."
+                  : `${actions.length} items need a decision before the afternoon cut-off`}
               </p>
               <ol className="mt-2 space-y-1 text-sm text-ink-muted">
                 {actions.map((action, index) => (
                   <li key={action.id}>
-                    {index + 1}. {action.productName} — {action.recommendedAction}
+                    {index + 1}. {action.productName} — {action.title}
                   </li>
                 ))}
               </ol>
             </div>
-            <Badge variant="success">Safety violations: 0</Badge>
+            <Badge variant="success">Safety violations: {demo.views.filter((view) => view.status === "do_not_serve").length}</Badge>
           </CardContent>
         </Card>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <WeeklyProtectedChart />
+            <WeeklyProtectedChart points={demo.week} />
           </div>
-          <ConfidenceDonut />
+          <ConfidenceDonut mix={demo.confidenceMix} />
         </div>
 
         <div className="mt-8 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">
-            Priority action list
-          </h2>
-          {actions.map((action, i) => (
-            <ActionCard key={action.id} action={action} index={i} />
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink-muted">Priority action list</h2>
+          {actions.length === 0 && (
+            <p className="rounded-xl border border-dashed border-mint-200 bg-white px-4 py-6 text-sm text-ink-muted">
+              No open actions. Accept one from Rescue Optimiser, or add a short-dated delivery.
+            </p>
+          )}
+          {actions.map((action, index) => (
+            <ActionCard key={action.id} action={action} index={index} />
           ))}
         </div>
       </div>

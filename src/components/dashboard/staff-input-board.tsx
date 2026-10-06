@@ -2,64 +2,96 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { AiBadge } from "@/components/ui/ai-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Product, StaffInputKind, StaffInputRecord, StockCheckPrompt, WasteReason } from "@/lib/data";
+import { useToast } from "@/components/ui/toast";
 import { wasteReasonLabels } from "@/lib/labels";
+import type { WasteReason } from "@/lib/data";
+import { formatVenue } from "@/lib/dates";
+import { structureVoice } from "@/services/aiService";
+import { confirmStock, recordPrep } from "@/services/inventoryService";
+import { recordWaste } from "@/services/wasteService";
+import { useDemo } from "@/services/useDemo";
+import { useMiseStore } from "@/store/useMiseStore";
+import type { CatalogProduct } from "@/store/types";
 import { ClipboardCheck, Mic, Trash2, UtensilsCrossed } from "lucide-react";
 
-const kinds: Array<{ id: StaffInputKind; label: string; detail: string; icon: typeof Mic }> = [
+const kinds = [
   { id: "prepared_batch", label: "Prepared batch records", detail: "Batches and opened packs the POS never sees", icon: UtensilsCrossed },
   { id: "waste", label: "Waste capture records", detail: "What left the kitchen, and why", icon: Trash2 },
   { id: "stock_confirmation", label: "Stock confirmations", detail: "A short check only when the decision needs it", icon: ClipboardCheck },
   { id: "voice", label: "Voice input / notes", detail: "Say what happened. MiseZero turns it into a record", icon: Mic },
-];
+] as const;
 
-const kindLabels: Record<StaffInputKind, string> = {
-  prepared_batch: "Prepared batch",
-  waste: "Waste capture",
-  stock_confirmation: "Stock confirmation",
-  voice: "Voice note",
-};
+type Kind = (typeof kinds)[number]["id"];
+type NamedProduct = { id: string; name: string; unit: string };
 
 const reasons = Object.keys(wasteReasonLabels) as WasteReason[];
 
-type VoiceExample = {
-  text: string;
-  productName: string;
-  quantity?: number;
-  unit?: string;
-  event: string;
-};
+export function StaffInputBoard() {
+  const demo = useDemo();
+  const toast = useToast();
+  const [kind, setKind] = useState<Kind>("prepared_batch");
+  const [pending, setPending] = useState(false);
+  const products = demo.products;
+  const prompts = demo.views.filter((view) => view.confirmationRequired).slice(0, 8);
 
-export function StaffInputBoard({
-  initialRecords,
-  prompts,
-  products,
-  voiceExamples,
-}: {
-  initialRecords: StaffInputRecord[];
-  prompts: StockCheckPrompt[];
-  products: Product[];
-  voiceExamples: VoiceExample[];
-}) {
-  const [kind, setKind] = useState<StaffInputKind>("prepared_batch");
-  const [records, setRecords] = useState(initialRecords);
-  const [openPrompts, setOpenPrompts] = useState(prompts);
-
-  const addRecord = (record: Omit<StaffInputRecord, "id" | "recordedAt" | "staffName" | "status"> & { status?: StaffInputRecord["status"] }) => {
-    setRecords((current) => [
-      {
-        id: `si-${Date.now()}`,
-        recordedAt: "Just now",
-        staffName: "Jamie · prep",
-        status: record.status ?? "passed_to_intake",
-        ...record,
-      },
-      ...current,
-    ]);
+  const run = async (work: () => Promise<void>, success: string) => {
+    setPending(true);
+    try {
+      await work();
+      toast.push(success);
+    } catch (error) {
+      toast.push(error instanceof Error ? error.message : "Could not save that", "error");
+    } finally {
+      setPending(false);
+    }
   };
+
+  const records = [
+    ...demo.preps.map((item) => ({
+      id: item.id,
+      at: item.date,
+      kind: "prepared_batch" as const,
+      summary: item.note || "Prepared batch",
+      productName: products.find((product) => product.id === item.productId)?.name ?? "Product",
+      quantity: item.qty,
+      unit: item.unit,
+      status: "passed_to_intake" as const,
+    })),
+    ...demo.waste.map((item) => ({
+      id: item.id,
+      at: item.date,
+      kind: "waste" as const,
+      summary: item.note || "Waste recorded",
+      productName: products.find((product) => product.id === item.productId)?.name ?? "Product",
+      quantity: item.qty,
+      unit: item.unit,
+      status: "passed_to_intake" as const,
+    })),
+    ...demo.confirmations.map((item) => ({
+      id: item.id,
+      at: item.date,
+      kind: "stock_confirmation" as const,
+      summary: "Stock confirmation",
+      productName: products.find((product) => product.id === item.productId)?.name ?? "Product",
+      quantity: item.qty,
+      unit: item.unit,
+      status: "passed_to_intake" as const,
+    })),
+    ...demo.voiceNotes.map((item) => ({
+      id: item.id,
+      at: item.at,
+      kind: "voice" as const,
+      summary: item.text,
+      productName: item.productName,
+      quantity: item.qty ?? undefined,
+      unit: item.unit ?? undefined,
+      status: item.status,
+    })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
 
   return (
     <div className="space-y-5">
@@ -89,25 +121,68 @@ export function StaffInputBoard({
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card>
           <CardContent className="p-5">
-            {kind === "prepared_batch" && <BatchForm products={products} onSave={addRecord} />}
-            {kind === "waste" && <WasteForm products={products} onSave={addRecord} />}
-            {kind === "stock_confirmation" && (
-              <ConfirmForm
-                prompts={openPrompts}
-                onConfirm={(prompt, quantity) => {
-                  addRecord({
-                    kind: "stock_confirmation",
-                    summary: `Confirmed ${quantity} ${prompt.unit} of ${prompt.productName.toLowerCase()}`,
-                    productName: prompt.productName,
-                    quantity: Number(quantity),
-                    unit: prompt.unit,
-                    detail: "Physical check passed to Smart Intake. The stock range can tighten around this figure.",
-                  });
-                  setOpenPrompts((current) => current.filter((item) => item.id !== prompt.id));
-                }}
+            {kind === "prepared_batch" && (
+              <BatchForm
+                products={products}
+                pending={pending}
+                onSave={(productId, qty, note) => void run(() => recordPrep(productId, qty, note), "Batch recorded")}
               />
             )}
-            {kind === "voice" && <VoiceForm examples={voiceExamples} onSave={addRecord} />}
+            {kind === "waste" && (
+              <WasteForm
+                products={products}
+                pending={pending}
+                onSave={(productId, qty, reason) =>
+                  void run(() => recordWaste({ productId, qty, reason, destination: "disposal", note: wasteReasonLabels[reason] }), "Waste recorded")
+                }
+              />
+            )}
+            {kind === "stock_confirmation" && (
+              <ConfirmForm
+                prompts={prompts.map((view) => ({
+                  id: view.productId,
+                  productName: view.productName,
+                  unit: view.unit,
+                  suggested: view.math.expected,
+                  estimateLabel: `${Math.round(view.math.low * 10) / 10}–${Math.round(view.math.high * 10) / 10} ${view.unit}`,
+                  deadline: view.actBy ? formatVenue(view.actBy, demo.venue.timezone) : "No deadline",
+                  reason: view.flags.join(", ").replaceAll("_", " "),
+                }))}
+                pending={pending}
+                onConfirm={(productId, quantity) => void run(() => confirmStock(productId, Number(quantity)), "Stock confirmation saved")}
+              />
+            )}
+            {kind === "voice" && (
+              <VoiceForm
+                products={products}
+                pending={pending}
+                onSave={(text) =>
+                  void run(async () => {
+                    const draft = structureVoice(text, products);
+                    useMiseStore.getState().addVoice({
+                      id: `voice_${Date.now()}`,
+                      text,
+                      at: new Date().toISOString(),
+                      productId: draft.productId,
+                      productName: draft.productName,
+                      qty: draft.qty,
+                      unit: draft.unit,
+                      event: draft.event,
+                      status: draft.status,
+                    });
+                    if (draft.status === "passed_to_intake" && draft.productId && draft.qty) {
+                      if (draft.event === "Waste") {
+                        await recordWaste({ productId: draft.productId, qty: draft.qty, reason: "other", destination: "disposal", note: text });
+                      } else if (draft.event === "Stock count") {
+                        await confirmStock(draft.productId, draft.qty, draft.unit ?? undefined);
+                      } else {
+                        await recordPrep(draft.productId, draft.qty, text);
+                      }
+                    }
+                  }, "Voice note saved")
+                }
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -117,24 +192,22 @@ export function StaffInputBoard({
               <h2 className="font-semibold text-ink">Passed to Smart Intake</h2>
               <Badge variant="success">{records.length}</Badge>
             </div>
-            <p className="mt-1 text-sm text-ink-muted">
-              Each note becomes a structured event. Staff are not asked to count the whole kitchen.
-            </p>
+            <p className="mt-1 text-sm text-ink-muted">Each note becomes a structured event and updates stock when it has a quantity.</p>
+            {records.length === 0 && <p className="mt-4 text-sm text-ink-muted">No staff records yet.</p>}
             <ul className="mt-4 space-y-3">
-              {records.map((record) => (
+              {records.slice(0, 20).map((record) => (
                 <li key={record.id} className="rounded-xl border border-mint-100 px-3 py-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium text-ink">{record.summary}</p>
-                    <Badge>{kindLabels[record.kind]}</Badge>
+                    <Badge>{record.kind.replaceAll("_", " ")}</Badge>
                     <Badge variant={record.status === "passed_to_intake" ? "success" : "warning"}>
                       {record.status === "passed_to_intake" ? "Passed to intake" : "Needs review"}
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-ink-muted">
-                    {record.recordedAt} · {record.staffName}
+                    {formatVenue(record.at, demo.venue.timezone)} · {record.productName}
                     {record.quantity !== undefined ? ` · ${record.quantity} ${record.unit ?? ""}` : ""}
                   </p>
-                  {record.detail && <p className="mt-1 text-sm text-ink-muted">{record.detail}</p>}
                 </li>
               ))}
             </ul>
@@ -147,15 +220,17 @@ export function StaffInputBoard({
 
 function BatchForm({
   products,
+  pending,
   onSave,
 }: {
-  products: Product[];
-  onSave: (record: Omit<StaffInputRecord, "id" | "recordedAt" | "staffName">) => void;
+  products: NamedProduct[];
+  pending: boolean;
+  onSave: (productId: string, qty: number, note: string) => void;
 }) {
-  const [productName, setProductName] = useState("Club sandwich (batch)");
-  const [quantity, setQuantity] = useState("24");
+  const [productId, setProductId] = useState(products[0]?.id ?? "");
+  const [quantity, setQuantity] = useState("1");
   const [note, setNote] = useState("Prepared for the lunch batch");
-  const product = products.find((item) => item.name === productName);
+  const product = products.find((item) => item.id === productId);
 
   return (
     <form
@@ -164,23 +239,14 @@ function BatchForm({
         event.preventDefault();
         const qty = Number(quantity);
         if (!product || qty <= 0) return;
-        onSave({
-          kind: "prepared_batch",
-          summary: `Prepared ${qty} ${product.unit} of ${product.name.toLowerCase()}`,
-          productName: product.name,
-          quantity: qty,
-          unit: product.unit,
-          status: "passed_to_intake",
-          detail: note || "Prepared batch recorded by staff.",
-        });
-        setNote("");
+        onSave(product.id, qty, note);
       }}
     >
-      <FormTitle title="Prepared batch record" detail="Log what was made or opened. This is the kitchen movement invoices and sales do not show." />
+      <FormTitle title="Prepared batch record" detail="Log what was made or opened. This quantity is subtracted from that product." />
       <Field label="Product or batch">
-        <select className="input-field" value={productName} onChange={(event) => setProductName(event.target.value)}>
+        <select className="input-field" value={productId} onChange={(event) => setProductId(event.target.value)}>
           {products.map((item) => (
-            <option key={item.id} value={item.name}>{item.name}</option>
+            <option key={item.id} value={item.id}>{item.name}</option>
           ))}
         </select>
       </Field>
@@ -188,24 +254,26 @@ function BatchForm({
         <input className="input-field" value={quantity} onChange={(event) => setQuantity(event.target.value)} inputMode="decimal" />
       </Field>
       <Field label="Note">
-        <input className="input-field" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Prepared 24 chicken sandwiches" />
+        <input className="input-field" value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
-      <Button type="submit">Save batch record</Button>
+      <Button type="submit" disabled={pending}>Save batch record</Button>
     </form>
   );
 }
 
 function WasteForm({
   products,
+  pending,
   onSave,
 }: {
-  products: Product[];
-  onSave: (record: Omit<StaffInputRecord, "id" | "recordedAt" | "staffName">) => void;
+  products: NamedProduct[];
+  pending: boolean;
+  onSave: (productId: string, qty: number, reason: WasteReason) => void;
 }) {
-  const [productName, setProductName] = useState("Avocado");
-  const [quantity, setQuantity] = useState("6");
+  const [productId, setProductId] = useState(products.find((item) => item.name === "Avocado")?.id ?? products[0]?.id ?? "");
+  const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState<WasteReason>("damage");
-  const product = products.find((item) => item.name === productName);
+  const product = products.find((item) => item.id === productId);
 
   return (
     <form
@@ -214,22 +282,14 @@ function WasteForm({
         event.preventDefault();
         const qty = Number(quantity);
         if (!product || qty <= 0) return;
-        onSave({
-          kind: "waste",
-          summary: `Recorded ${qty} ${product.unit} of ${product.name.toLowerCase()} as waste`,
-          productName: product.name,
-          quantity: qty,
-          unit: product.unit,
-          status: "passed_to_intake",
-          detail: `${wasteReasonLabels[reason]}. The evidence pack keeps the destination and value.`,
-        });
+        onSave(product.id, qty, reason);
       }}
     >
       <FormTitle title="Waste capture record" detail="A short kitchen record of what was lost. The evidence pack keeps the full trail." />
       <Field label="Product">
-        <select className="input-field" value={productName} onChange={(event) => setProductName(event.target.value)}>
+        <select className="input-field" value={productId} onChange={(event) => setProductId(event.target.value)}>
           {products.map((item) => (
-            <option key={item.id} value={item.name}>{item.name}</option>
+            <option key={item.id} value={item.id}>{item.name}</option>
           ))}
         </select>
       </Field>
@@ -244,10 +304,8 @@ function WasteForm({
         </select>
       </Field>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit">Save waste record</Button>
-        <Link href="/dashboard/waste" className="text-sm font-medium text-mint-700 hover:underline">
-          Open the evidence pack
-        </Link>
+        <Button type="submit" disabled={pending}>Save waste record</Button>
+        <Link href="/dashboard/waste" className="text-sm font-medium text-mint-700 hover:underline">Open the evidence pack</Link>
       </div>
     </form>
   );
@@ -255,15 +313,14 @@ function WasteForm({
 
 function ConfirmForm({
   prompts,
+  pending,
   onConfirm,
 }: {
-  prompts: StockCheckPrompt[];
-  onConfirm: (prompt: StockCheckPrompt, quantity: string) => void;
+  prompts: Array<{ id: string; productName: string; unit: string; suggested: number; estimateLabel: string; deadline: string; reason: string }>;
+  pending: boolean;
+  onConfirm: (productId: string, quantity: string) => void;
 }) {
-  const [quantities, setQuantities] = useState<Record<string, string>>(() =>
-    Object.fromEntries(prompts.map((prompt) => [prompt.id, String(prompt.suggested)])),
-  );
-
+  const [quantities, setQuantities] = useState<Record<string, string>>({});
   if (prompts.length === 0) {
     return (
       <div>
@@ -272,7 +329,6 @@ function ConfirmForm({
       </div>
     );
   }
-
   return (
     <div className="space-y-4">
       <FormTitle title="Stock confirmation" detail="Count only the item in front of you. The rest of the stock estimate stays a range." />
@@ -282,26 +338,19 @@ function ConfirmForm({
           className="rounded-xl border border-mint-200 p-3"
           onSubmit={(event) => {
             event.preventDefault();
-            onConfirm(prompt, quantities[prompt.id] ?? String(prompt.suggested));
+            onConfirm(prompt.id, quantities[prompt.id] ?? String(Math.round(prompt.suggested * 100) / 100));
           }}
         >
           <p className="text-sm font-semibold text-ink">{prompt.productName}</p>
-          <p className="mt-1 text-sm text-ink-muted">{prompt.prompt}</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Estimate {prompt.estimateLabel} · needed by {prompt.deadline}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">Estimate {prompt.estimateLabel} · needed by {prompt.deadline}</p>
           <p className="mt-2 text-sm text-ink">{prompt.reason}</p>
-          <label className="mt-3 block text-xs font-medium text-ink" htmlFor={`check-${prompt.id}`}>
-            Quantity remaining ({prompt.unit})
-          </label>
           <input
-            id={`check-${prompt.id}`}
-            className="input-field mt-1 max-w-40"
-            value={quantities[prompt.id] ?? ""}
+            className="input-field mt-3 max-w-40"
+            value={quantities[prompt.id] ?? String(Math.round(prompt.suggested * 100) / 100)}
             onChange={(event) => setQuantities((current) => ({ ...current, [prompt.id]: event.target.value }))}
             inputMode="decimal"
           />
-          <Button size="sm" className="mt-3" type="submit">Confirm stock</Button>
+          <Button size="sm" className="mt-3" type="submit" disabled={pending}>Confirm stock</Button>
         </form>
       ))}
     </div>
@@ -309,70 +358,53 @@ function ConfirmForm({
 }
 
 function VoiceForm({
-  examples,
+  products,
+  pending,
   onSave,
 }: {
-  examples: VoiceExample[];
-  onSave: (record: Omit<StaffInputRecord, "id" | "recordedAt" | "staffName">) => void;
+  products: CatalogProduct[];
+  pending: boolean;
+  onSave: (text: string) => void;
 }) {
   const [transcript, setTranscript] = useState("");
   const [listening, setListening] = useState(false);
-  const match = examples.find((example) => example.text.toLowerCase() === transcript.trim().toLowerCase());
+  const draft = transcript.trim() ? structureVoice(transcript, products) : null;
+  const examples = ["Wasted 6 avocados", "Opened second 2-litre cream carton", "Counted 4.9 L fresh cream"];
 
   const save = (event: FormEvent) => {
     event.preventDefault();
-    const text = transcript.trim();
-    if (!text) return;
-    onSave({
-      kind: "voice",
-      summary: text,
-      productName: match?.productName ?? "Unparsed note",
-      quantity: match?.quantity,
-      unit: match?.unit,
-      status: match ? "passed_to_intake" : "needs_review",
-      detail: match
-        ? `${match.event}. Structured from the voice note and passed to Smart Intake.`
-        : "The note was saved, but the product and quantity still need a quick check.",
-    });
+    if (!transcript.trim()) return;
+    onSave(transcript.trim());
     setTranscript("");
   };
 
   return (
     <form className="space-y-3" onSubmit={save}>
-      <FormTitle title="Voice input" detail="Speak a kitchen event in one sentence. Known phrases become a product, a quantity, and an event type." />
+      <div className="flex items-center gap-2">
+        <FormTitle title="Voice input" detail="Type a kitchen event, or play a sample note. The beta parser fills product, quantity, and event. You still press save." />
+      </div>
+      <AiBadge />
       <div className="flex flex-wrap gap-2">
         {examples.map((example) => (
-          <button
-            key={example.text}
-            type="button"
-            onClick={() => setTranscript(example.text)}
-            className="rounded-full border border-mint-200 bg-mint-50 px-3 py-1 text-left text-xs text-ink hover:border-mint-400"
-          >
-            {example.text}
+          <button key={example} type="button" onClick={() => setTranscript(example)} className="rounded-full border border-mint-200 bg-mint-50 px-3 py-1 text-left text-xs text-ink hover:border-mint-400">
+            {example}
           </button>
         ))}
       </div>
-      <textarea
-        className="input-field min-h-24"
-        value={transcript}
-        onChange={(event) => setTranscript(event.target.value)}
-        placeholder="Opened second 2-litre cream carton"
-      />
+      <textarea className="input-field min-h-24" value={transcript} onChange={(event) => setTranscript(event.target.value)} placeholder="Opened second 2-litre cream carton" />
       <div className="rounded-xl bg-mint-50 px-3 py-3 text-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">Structured result</p>
-        {match ? (
+        {draft ? (
           <p className="mt-1 text-ink">
-            {match.event} · {match.productName}
-            {match.quantity !== undefined ? ` · ${match.quantity} ${match.unit}` : ""}
+            {draft.event} · {draft.productName}
+            {draft.qty !== null ? ` · ${draft.qty} ${draft.unit ?? ""}` : ""} · {draft.status === "passed_to_intake" ? "Ready" : "Needs review"}
           </p>
         ) : (
-          <p className="mt-1 text-ink-muted">
-            {transcript.trim() ? "Saved for review until a product and quantity are clear." : "Pick a phrase or type what you would say."}
-          </p>
+          <p className="mt-1 text-ink-muted">Pick a phrase or type what you would say.</p>
         )}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="submit">Save voice note</Button>
+        <Button type="submit" disabled={pending}>Save voice note</Button>
         <Button
           type="button"
           variant="outline"
@@ -380,7 +412,7 @@ function VoiceForm({
           onClick={() => {
             setListening(true);
             window.setTimeout(() => {
-              setTranscript(examples[1]?.text ?? "Opened second 2-litre cream carton");
+              setTranscript(examples[1] ?? "");
               setListening(false);
             }, 900);
           }}

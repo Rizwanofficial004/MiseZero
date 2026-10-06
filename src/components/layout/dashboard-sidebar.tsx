@@ -11,23 +11,28 @@ import {
   ClipboardList,
   Hand,
   House,
+  Package,
   PanelLeftClose,
   PanelLeftOpen,
   ScanLine,
+  ScrollText,
   Settings2,
   ShieldCheck,
   SlidersHorizontal,
+  Utensils,
   WandSparkles,
 } from "lucide-react";
 import { Logo } from "@/components/layout/landing-nav";
-import { cafeProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { useDemo } from "@/services/useDemo";
 
 const navItems = [
   { href: "/dashboard", label: "Daily Action Hub", icon: House },
   { href: "/dashboard/alerts", label: "Alerts", icon: BellRing },
   { href: "/dashboard/intake", label: "Smart Intake", icon: ScanLine },
   { href: "/dashboard/staff-inputs", label: "Manual & Staff", icon: Hand },
+  { href: "/dashboard/products", label: "Products", icon: Package },
+  { href: "/dashboard/recipes", label: "Recipes", icon: Utensils },
   { href: "/dashboard/inventory", label: "Stock Estimates", icon: Boxes },
   { href: "/dashboard/recommendations", label: "Rescue Optimiser", icon: WandSparkles },
   { href: "/dashboard/waste", label: "Waste & Evidence", icon: ClipboardList },
@@ -35,6 +40,7 @@ const navItems = [
   { href: "/dashboard/integrations", label: "POS Mapping", icon: ChartNoAxesCombined },
   { href: "/dashboard/outcomes", label: "Outcomes", icon: Gauge },
   { href: "/dashboard/calibration", label: "Calibration", icon: ShieldCheck },
+  { href: "/dashboard/activity", label: "Activity", icon: ScrollText },
   { href: "/dashboard/settings", label: "Settings", icon: SlidersHorizontal },
 ];
 
@@ -46,10 +52,12 @@ export function DashboardSidebar({
   onToggle: () => void;
 }) {
   const pathname = usePathname();
+  const venue = useDemo().venue;
 
   return (
     <aside
       className={cn(
+        "no-print",
         "sticky top-0 flex h-screen shrink-0 flex-col border-r border-[#e2ebe5] bg-white transition-[width] duration-300",
         collapsed ? "w-[64px]" : "w-56",
       )}
@@ -71,7 +79,7 @@ export function DashboardSidebar({
       {!collapsed && (
         <div className="border-b border-[#edf3ee] px-3.5 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">Pilot site</p>
-          <p className="mt-0.5 truncate text-sm font-semibold text-ink">{cafeProfile.name}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold text-ink">{venue.name}</p>
         </div>
       )}
 

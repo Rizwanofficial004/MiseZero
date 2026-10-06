@@ -56,6 +56,18 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+@media print {
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    overflow: visible !important;
+  }
+}
+
 .input-field:focus {
   border-color: #71b18c;
   box-shadow: 0 0 0 3px rgba(74, 155, 110, 0.12);

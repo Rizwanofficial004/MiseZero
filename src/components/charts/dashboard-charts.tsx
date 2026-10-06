@@ -13,9 +13,13 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
-import { confidenceMix, weeklyTrend } from "@/lib/data";
 
-export function WeeklyProtectedChart() {
+export function WeeklyProtectedChart({
+  points,
+}: {
+  points: Array<{ day: string; protected: number; waste: number }>;
+}) {
+  const weeklyTrend = points.length > 0 ? points : [{ day: "—", protected: 0, waste: 0 }];
   return (
     <Card className="h-full">
       <CardContent className="p-5">
@@ -69,7 +73,12 @@ export function WeeklyProtectedChart() {
   );
 }
 
-export function ConfidenceDonut() {
+export function ConfidenceDonut({
+  mix,
+}: {
+  mix: Array<{ name: string; value: number; fill: string }>;
+}) {
+  const confidenceMix = mix.length > 0 ? mix : [{ name: "None", value: 1, fill: "#e4f1e9" }];
   return (
     <Card className="h-full">
       <CardContent className="p-5">
