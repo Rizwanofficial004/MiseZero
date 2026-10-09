@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { ConfidenceDonut } from "@/components/charts/dashboard-charts";
 import { DashboardHeader } from "@/components/layout/dashboard-sidebar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 import { SHADOW_FORMULA } from "@/engine/constants";
 import { round } from "@/engine/present";
+import { confirmStock } from "@/services/inventoryService";
 import { useDemo } from "@/services/useDemo";
 import { formatCurrency, formatRange } from "@/lib/utils";
 import { formatVenue } from "@/lib/dates";
@@ -20,7 +24,27 @@ const riskLabel = {
 
 export default function InventoryPage() {
   const demo = useDemo();
+  const toast = useToast();
   const cream = demo.views.find((view) => view.productId === "prod_cream") ?? demo.views[0];
+  const [count, setCount] = useState<{ productId: string; where: "card" | "row"; qty: string } | null>(null);
+  const [pending, setPending] = useState(false);
+
+  const openCount = (productId: string, where: "card" | "row", suggested: number) => {
+    setCount({ productId, where, qty: String(round(suggested)) });
+  };
+
+  const saveCount = async (productId: string) => {
+    setPending(true);
+    try {
+      await confirmStock(productId, Number(count?.qty));
+      toast.push("Stock count saved. The estimate now starts from that quantity.");
+      setCount(null);
+    } catch (error) {
+      toast.push(error instanceof Error ? error.message : "Could not save the count", "error");
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <div>
@@ -47,6 +71,16 @@ export default function InventoryPage() {
                 </div>
                 <Badge variant="warning">{riskLabel[cream.riskClass]} waste risk</Badge>
               </div>
+              <CountEditor
+                open={count?.productId === cream.productId && count.where === "card"}
+                unit={cream.unit}
+                qty={count?.qty ?? ""}
+                pending={pending}
+                onOpen={() => openCount(cream.productId, "card", cream.math.expected)}
+                onQty={(qty) => setCount((current) => (current ? { ...current, qty } : current))}
+                onCancel={() => setCount(null)}
+                onSave={() => void saveCount(cream.productId)}
+              />
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Stat label="Expected use before deadline" value={`${round(cream.expectedUse)} ${cream.unit}`} />
@@ -132,6 +166,16 @@ export default function InventoryPage() {
                       <td className="px-4 py-4">
                         <Badge variant={item.riskClass === "low" ? "success" : "warning"}>{riskLabel[item.riskClass]}</Badge>
                         {item.confirmationRequired && <p className="mt-1 text-xs text-amber-700">Confirm before acting</p>}
+                        <CountEditor
+                          open={count?.productId === item.productId && count.where === "row"}
+                          unit={item.unit}
+                          qty={count?.qty ?? ""}
+                          pending={pending}
+                          onOpen={() => openCount(item.productId, "row", item.math.expected)}
+                          onQty={(qty) => setCount((current) => (current ? { ...current, qty } : current))}
+                          onCancel={() => setCount(null)}
+                          onSave={() => void saveCount(item.productId)}
+                        />
                       </td>
                       <td className="px-4 py-4 text-ink-muted">
                         {round(item.expectedUse)} {item.unit}
@@ -152,6 +196,54 @@ export default function InventoryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CountEditor({
+  open,
+  unit,
+  qty,
+  pending,
+  onOpen,
+  onQty,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  unit: string;
+  qty: string;
+  pending: boolean;
+  onOpen: () => void;
+  onQty: (qty: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" className="mt-2" type="button" onClick={onOpen}>
+        Confirm stock
+      </Button>
+    );
+  }
+  return (
+    <form
+      className="mt-2 flex flex-wrap items-center gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave();
+      }}
+    >
+      <input
+        className="input-field h-8 w-24 px-2 text-sm"
+        value={qty}
+        onChange={(event) => onQty(event.target.value)}
+        inputMode="decimal"
+        aria-label={`Counted quantity in ${unit}`}
+      />
+      <span className="text-xs text-ink-muted">{unit}</span>
+      <Button size="sm" type="submit" disabled={pending}>{pending ? "Saving…" : "Save count"}</Button>
+      <Button size="sm" variant="ghost" type="button" disabled={pending} onClick={onCancel}>Cancel</Button>
+    </form>
   );
 }
 
