@@ -111,6 +111,7 @@ export const useMiseStore = create<MiseState>()(
         const recipe = get().recipes.find((item) => item.id === id);
         set({
           recipes: get().recipes.filter((item) => item.id !== id),
+          posMappings: get().posMappings.filter((item) => item.recipeId !== id),
           activity: activity(get().activity, `Deleted recipe ${recipe?.name ?? id}`, "recipe"),
         });
       },

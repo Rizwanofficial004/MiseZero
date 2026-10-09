@@ -14,10 +14,12 @@ export async function saveRecipe(recipe: Recipe) {
   if (recipe.lines.some((line) => !line.productId || line.qty <= 0)) throw new Error("Each ingredient needs a product and a quantity");
   await pause();
   useMiseStore.getState().saveRecipe(recipe);
-  const mapping = useMiseStore.getState().posMappings.find((item) => item.menuItemName === recipe.menuItemName);
-  useMiseStore.getState().saveMapping(
-    mapping ?? { id: uid("map"), menuItemName: recipe.menuItemName, recipeId: recipe.id },
-  );
+  const mapping = useMiseStore.getState().posMappings.find((item) => item.recipeId === recipe.id);
+  useMiseStore.getState().saveMapping({
+    id: mapping?.id ?? uid("map"),
+    menuItemName: recipe.menuItemName,
+    recipeId: recipe.id,
+  });
 }
 
 export async function deleteRecipe(id: string) {
