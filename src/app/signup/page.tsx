@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/layout/landing-nav";
-import { plans } from "@/lib/data";
 import { signIn } from "@/services/activityService";
 
 export default function SignupPage() {
@@ -50,16 +49,6 @@ export default function SignupPage() {
               <div>
                 <label className="text-sm font-medium text-ink" htmlFor="email">Work email</label>
                 <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="input-field mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-ink" htmlFor="plan">Plan</label>
-                <select id="plan" className="input-field mt-1">
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {p.price > 0 ? `£${p.price}/mo` : "Custom"}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className="text-sm font-medium text-ink" htmlFor="pos">Primary POS system</label>

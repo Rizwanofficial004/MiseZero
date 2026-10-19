@@ -862,7 +862,7 @@ export const benchmarkComparison = {
     { label: "Unnecessary staff checks", baseline: 15, misezero: 4, unit: "/day" },
     { label: "Waste avoided (pilot week)", baseline: 42, misezero: 68, unit: "£" },
   ],
-  note: "Pilot measurements — not projected figures. Baseline uses deterministic stock formula.",
+  note: "illustrative prototype data — not projected figures. Baseline uses deterministic stock formula.",
 };
 
 export const plans: Plan[] = [

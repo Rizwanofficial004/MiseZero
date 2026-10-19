@@ -45,7 +45,6 @@ export function LandingNav() {
         <nav className="hidden items-center gap-7 text-sm text-ink-muted md:flex">
           <a href="#features" className="transition hover:text-ink">Features</a>
           <a href="#how-it-works" className="transition hover:text-ink">How it works</a>
-          <a href="#pricing" className="transition hover:text-ink">Pricing</a>
           <a href="#pos" className="transition hover:text-ink">POS integration</a>
         </nav>
         <div className="flex items-center gap-3">
@@ -78,7 +77,6 @@ export function LandingFooter() {
               <p className="font-semibold text-ink">Product</p>
               <ul className="mt-3 space-y-2 text-ink-muted">
                 <li><a href="#features" className="hover:text-ink">Features</a></li>
-                <li><a href="#pricing" className="hover:text-ink">Pricing</a></li>
                 <li><a href="#pos" className="hover:text-ink">Integrations</a></li>
               </ul>
             </div>

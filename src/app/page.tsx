@@ -7,7 +7,6 @@ import {
   LogoMarquee,
   PosSection,
   PositioningSection,
-  PricingSection,
 } from "@/components/landing/sections";
 import { LandingFooter, LandingNav } from "@/components/layout/landing-nav";
 
@@ -23,7 +22,6 @@ export default function HomePage() {
         <PositioningSection />
         <BenchmarkSection />
         <PosSection />
-        <PricingSection />
         <CtaSection />
       </main>
       <LandingFooter />

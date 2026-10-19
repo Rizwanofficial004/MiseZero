@@ -12,7 +12,6 @@ import {
   dashboardSummary,
   getPositioning,
   knowledgeGraphExample,
-  plans,
 } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -281,60 +280,6 @@ export function BenchmarkSection() {
                       <p className="font-serif text-3xl text-mint-700">{m.misezero}{m.unit}</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function PricingSection() {
-  return (
-    <section id="pricing" className="bg-white py-16">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <Reveal className="text-center">
-          <p className="text-sm font-semibold text-mint-700">Pricing</p>
-          <h2 className="font-serif mt-2 text-3xl text-ink md:text-4xl">Plans for every stage</h2>
-          <p className="mt-4 text-ink-muted">Single-site bakeries and cafés through to small multi-site groups</p>
-        </Reveal>
-        <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          {plans.map((plan, i) => (
-            <Reveal key={plan.id} delay={i * 0.08}>
-              <Card className={`h-full ${plan.highlighted ? "border-mint-400 ring-4 ring-mint-100" : ""}`}>
-                <CardContent className="p-6">
-                  {plan.highlighted && (
-                    <span className="rounded-full bg-mint-100 px-2.5 py-0.5 text-xs font-semibold text-mint-700">
-                      Most popular
-                    </span>
-                  )}
-                  <h3 className="mt-3 text-xl font-semibold text-ink">{plan.name}</h3>
-                  <p className="mt-2 text-sm text-ink-muted">{plan.description}</p>
-                  <div className="mt-5">
-                    {plan.price > 0 ? (
-                      <p className="font-serif text-4xl text-ink">
-                        {formatCurrency(plan.price)}
-                        <span className="font-sans text-base font-medium text-ink-muted"> /month</span>
-                      </p>
-                    ) : (
-                      <p className="font-serif text-4xl text-ink">Custom</p>
-                    )}
-                  </div>
-                  <ul className="mt-6 space-y-3">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex gap-2 text-sm text-ink-muted">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-mint-600" strokeWidth={1.75} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/signup" className="mt-8 block">
-                    <Button variant={plan.highlighted ? "primary" : "outline"} className="w-full">
-                      {plan.cta}
-                    </Button>
-                  </Link>
                 </CardContent>
               </Card>
             </Reveal>
