@@ -7,17 +7,14 @@ import { cn } from "@/lib/utils";
 
 export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
   return (
-    <Link href="/" className={cn("flex items-center gap-2.5 font-semibold text-ink", className)}>
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-mint-400 to-mint-600 text-white shadow-[0_8px_18px_-8px_rgba(31,154,100,0.9)]">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-          <path
-            d="M12 4c4 3.2 6 6.4 6 10.2C18 17.6 15.3 20 12 20s-6-2.4-6-5.8C6 10.4 8 7.2 12 4Z"
-            fill="currentColor"
-            opacity="0.95"
-          />
-          <path d="M12 8.2c1.6 1.6 2.4 3.1 2.4 4.8" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-        </svg>
-      </span>
+    <Link href="/" aria-label={compact ? "MiseZero" : undefined} className={cn("flex items-center gap-2.5 font-semibold text-ink", className)}>
+      <img
+        src="/logo-mark.png"
+        alt=""
+        width={558}
+        height={516}
+        className="h-9 w-9 shrink-0 object-contain"
+      />
       {!compact && <span className="text-[17px] tracking-tight">MiseZero</span>}
     </Link>
   );
